@@ -67,10 +67,18 @@ This project mirrors CVE Details into MongoDB and then provide queryable REST-AP
     	"lastModifiedDate": "2019-10-03T00:03Z"
     }
     
- OR other combinations like
- 
-     GET http://localhost:3000/cvedetails?description=*RDP*
-     GET http://localhost:3000/cvedetails?impact.severity=HIGH&publishedDate=lastMonth
+## MongoDB Config
+Create a `.env` file in the root folder with the next fields:
+- DB_USERNAME=""
+- DB_PASSWORD=""
+- DB_HOST=""
+
+Fill your MongoDB details in the corresponding field inside the quotes.
+
+## Express JS - Change default port
+The default port the servers listens to is 3000. To change it add the next field to the `.env file:
+- PORT=""
+
 
 ## Usage
 
