@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 
 const CVEMetaSchema = mongoose.Schema({
-    _id: String,
     lastModifiedDate: Date,
 });
 

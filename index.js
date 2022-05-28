@@ -1,28 +1,28 @@
 require("dotenv").config();
 
 const express = require("express");
-const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
 const app = express();
 const dbConfig = require("./config/database-config.js");
 const initializeDB = require("./app/scripts/initialize-db.js");
+const scheduler = require("./app/services/sync-scheduler.js");
 
-app.use(bodyParser.json());
+app.use(express.json());
 
-const mongoose = require("mongoose");
-mongoose.Promise = global.Promise;
-mongoose
-  .connect(dbConfig.url, {
-    useNewUrlParser: true,
-  })
-  .then(() => {
-    console.log("Successfully connected to the database");
-  })
-  .catch((err) => {
-    console.log("Could not connect to the database. Exiting now...", err);
-    process.exit();
-  });
+mongoose.connect(dbConfig.url, dbConfig.options);
+const database = mongoose.connection;
+database.on("error", (error) => {
+  console.log("Could not connect to the database. Exiting now...", error);
+  process.exit();
+});
 
-initializeDB.importDB();
+database.once("connected", () => {
+  console.log("Successfully connected to the database");
+});
+
+initializeDB.importDB(database);
+initializeDB.firstRecord();
+scheduler.syncDB(database);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
