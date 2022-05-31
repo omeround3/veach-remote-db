@@ -7,28 +7,28 @@ const schedule = require("node-schedule");
 const updateCVEDetails = require("./cve-import.js").updateCVEDetails;
 
 function syncDB(connection) {
-    const destDBConfig = {
-        dbURL: dbConfig.url,
-        dbConnection: connection,
-        collection: dbConfig.collection,
-        batchSize: dbConfig.batchSize,
-      };
+    // const destDBConfig = {
+    //     dbURL: dbConfig.url,
+    //     dbConnection: connection,
+    //     collection: dbConfig.collection,
+    //     batchSize: dbConfig.batchSize,
+    //   };
 
     // Set the scheduler to synchronize with nist db 0 */2 * * *
     var j = schedule.scheduleJob('*/3 * * * *', () => {
-        console.log("Running scheduled CVE Updater Job...");
+        logger.info("Running scheduled CVE Updater Job...");
         var remoteLastModified = new Date();
         CVEMeta.findOne().then(record => {
-        console.log(record);
+        logger.info(record);
         if(record.lastModifiedDate != remoteLastModified) {
-            console.log("Modified feed date is newer, updating the database");
+            logger.info("Modified feed date is newer, updating the database");
             var modifiedUrl = nvd.MODIFIED_URL + nvd.FEED_TYPE;
-            updateCVEDetails(modifiedUrl, destDBConfig);
+            updateCVEDetails(modifiedUrl);
             record.lastModifiedDate = remoteLastModified;
             record.save();
         }
         });
-        console.log("Finished scheduled CVE Updater Job");
+        logger.info("Finished scheduled CVE Updater Job");
     });
 }
 

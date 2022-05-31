@@ -1,6 +1,7 @@
 const nvd = require("../constants/nvdapi.js");
 const dbConfig = require("../../config/database-config.js");
 const importCVEDetails = require("../services/cve-import.js").importCVEDetails;
+const logger = require("../services/logger.js")
 
 // Import data from NIST for years provided in cmd line args
 
@@ -21,21 +22,21 @@ function importDB(connection) {
 
   // Import files from NVD by years provided as cmd arguments or all years until today
   if (years.length > 0) {
-    console.log("Importing JSON feeds from NVD for the years: " + years);
+    logger.info("Importing JSON feeds from NVD for the years: " + years);
     for (var i = 0; i < years.length; i++) {
       var url = nvd.DATA_FEED + years[i] + nvd.FEED_TYPE;
-      console.log("Importing " + years[i]);
+      logger.info("Importing " + years[i]);
       importCVEDetails(url, destDBConfig);
     }
   } else {
-    console.log(
+    logger.info(
       `Importing JSON feeds from NVD for the years ${yearsRange[0]} - ${
         yearsRange[yearsRange.length - 1]
       }`
     );
 
     for (const year in yearsRange) {
-      console.log(`Importing year ${yearsRange[year]}`);
+      logger.info(`Importing year ${yearsRange[year]}`);
       var url = nvd.DATA_FEED + yearsRange[year] + nvd.FEED_TYPE;
       importCVEDetails(url, destDBConfig, yearsRange[year]);
     }
@@ -50,7 +51,7 @@ async function firstRecord() {
   const CVEMeta = require("../models/cvemeta.js");
 
   const handleError = function (err) {
-    console.error(err);
+    logger.error(err);
     // handle your error
   };
 
@@ -64,9 +65,9 @@ async function firstRecord() {
   await delay(2000)
   CVEMeta.findById(id, (err, record) => {
     if (err) {
-      console.log(err);
+      logger.error(err);
     } else {
-      console.log("First Record:", record);
+      logger.info("First Record:", record);
     }
   });
 }
