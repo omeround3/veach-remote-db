@@ -35,7 +35,7 @@ database.once("connected", () => {
 
 initializeDB.importDB(database);
 initializeDB.firstRecord();
-scheduler.syncDB(database);
+// scheduler.syncDB(database);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>

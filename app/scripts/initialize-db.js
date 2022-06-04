@@ -1,7 +1,8 @@
 const nvd = require("../constants/nvdapi.js");
 const dbConfig = require("../../config/database-config.js");
 const importCVEDetails = require("../services/cve-import.js").importCVEDetails;
-const logger = require("../services/logger.js")
+const importCPEmatches = require("../services/cpe-import.js").importCPEmatches;
+const logger = require("../services/logger.js");
 
 // Import data from NIST for years provided in cmd line args
 
@@ -13,7 +14,7 @@ function importDB(connection) {
     (x) => x + FIRST_YEAR
   );
 
-  const destDBConfig = {
+  var destDBConfig = {
     dbURL: dbConfig.url,
     dbConnection: connection,
     collection: dbConfig.collection,
@@ -29,23 +30,28 @@ function importDB(connection) {
       importCVEDetails(url, destDBConfig);
     }
   } else {
-    logger.info(
-      `Importing JSON feeds from NVD for the years ${yearsRange[0]} - ${
-        yearsRange[yearsRange.length - 1]
-      }`
-    );
+    // logger.info(
+    //   `Importing JSON feeds from NVD for the years ${yearsRange[0]} - ${
+    //     yearsRange[yearsRange.length - 1]
+    //   }`
+    // );
 
-    for (const year in yearsRange) {
-      logger.info(`Importing year ${yearsRange[year]}`);
-      var url = nvd.DATA_FEED + yearsRange[year] + nvd.FEED_TYPE;
-      importCVEDetails(url, destDBConfig, yearsRange[year]);
-    }
+    // for (const year in yearsRange) {
+    //   logger.info(`Importing year ${yearsRange[year]}`);
+    //   var url = nvd.DATA_FEED + yearsRange[year] + nvd.FEED_TYPE;
+    //   importCVEDetails(url, destDBConfig, yearsRange[year]);
+    // }
+
+    logger.info("Importing CPEs matches");
+    destDBConfig.collection = "cpematches"
+    var cpeUrl = nvd.CPE_DATA_FEED + nvd.FEED_TYPE;
+    importCPEmatches(cpeUrl, destDBConfig);
   }
 }
 
 function delay(time) {
-  return new Promise(resolve => setTimeout(resolve, time));
-} 
+  return new Promise((resolve) => setTimeout(resolve, time));
+}
 
 async function firstRecord() {
   const CVEMeta = require("../models/cvemeta.js");
@@ -62,7 +68,7 @@ async function firstRecord() {
     id = record._id;
   });
 
-  await delay(2000)
+  await delay(2000);
   CVEMeta.findById(id, (err, record) => {
     if (err) {
       logger.error(err);

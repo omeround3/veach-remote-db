@@ -3,8 +3,8 @@ const nvd = require("../constants/nvdapi.js");
 const CVEMeta = require("../models/cvemeta.js");
 const dbConfig = require("../../config/database-config.js");
 const schedule = require("node-schedule");
-
 const updateCVEDetails = require("./cve-import.js").updateCVEDetails;
+const logger = require("./logger.js");
 
 function syncDB(connection) {
     // const destDBConfig = {
