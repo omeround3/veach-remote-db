@@ -6,7 +6,7 @@ const app = express();
 const dbConfig = require("./config/database-config.js");
 const initializeDB = require("./app/scripts/initialize-db.js");
 const logger = require("./app/services/logger.js");
-const scheduler = require("./app/services/sync-scheduler.js");
+const scheduler = require("./app/services/sync-cve-scheduler.js");
 
 function logRequest(req, res, next) {
   logger.info(req.url);
@@ -43,5 +43,5 @@ database.once("connected", async () => {
   await initializeDB.importCVE(database);
   await initializeDB.firstRecord();
   await initializeDB.importCPE(database);
-  // scheduler.syncCVE();
+  scheduler.syncCVE();
 });
