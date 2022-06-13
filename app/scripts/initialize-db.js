@@ -18,47 +18,50 @@ function delay(time) {
 
 // Import data from NIST for years provided in cmd line args
 async function importCVE(connection) {
-    var years = process.argv.slice(2);
-    var FIRST_YEAR = 2002;
-    let currentYear = new Date().getFullYear();
-    const yearsRange = [...Array(currentYear - FIRST_YEAR + 1).keys()].map(
-      (x) => x + FIRST_YEAR
+  var years = process.argv.slice(2);
+  var FIRST_YEAR = 2002;
+  let currentYear = new Date().getFullYear();
+  const yearsRange = [...Array(currentYear - FIRST_YEAR + 1).keys()].map(
+    (x) => x + FIRST_YEAR
+  );
+
+  destDBConfig.dbConnection = connection;
+
+  // Import files from NVD by years provided as cmd arguments or all years until today
+  if (years.length > 0) {
+    logger.info(
+      "[CVE] Importing CVE JSON feeds from NVD for the years: " + years
+    );
+    for (var i = 0; i < years.length; i++) {
+      var url = nvd.CVE_DATA_FEED + years[i] + nvd.FEED_TYPE;
+      logger.info("[CVE] Importing " + years[i]);
+      importCVEDetails(url, destDBConfig);
+    }
+  } else {
+    logger.info(
+      `[CVE] Importing CVE JSON feeds from NVD for the years ${
+        yearsRange[0]
+      } - ${yearsRange[yearsRange.length - 1]}`
     );
 
-    destDBConfig.dbConnection = connection;
-
-    // Import files from NVD by years provided as cmd arguments or all years until today
-    if (years.length > 0) {
-      logger.info(
-        "[CVE] Importing CVE JSON feeds from NVD for the years: " + years
-      );
-      for (var i = 0; i < years.length; i++) {
-        var url = nvd.DATA_FEED + years[i] + nvd.FEED_TYPE;
-        logger.info("[CVE] Importing " + years[i]);
-        importCVEDetails(url, destDBConfig);
-      }
-    } else {
-      logger.info(
-        `[CVE] Importing CVE JSON feeds from NVD for the years ${
-          yearsRange[0]
-        } - ${yearsRange[yearsRange.length - 1]}`
-      );
-
-      for (const year in yearsRange) {
-        logger.info(`[CVE] Importing year ${yearsRange[year]}`);
-        url = nvd.DATA_FEED + yearsRange[year] + nvd.FEED_TYPE;
-        await importCVEDetails(url, destDBConfig, yearsRange[year]).then(() => {
-          logger.info(`[CVE] Done importing CVE JSON Feeds - ${yearsRange[year]}`);
+    for (const year in yearsRange) {
+      logger.info(`[CVE] Importing year ${yearsRange[year]}`);
+      url = nvd.CVE_DATA_FEED + yearsRange[year] + nvd.FEED_TYPE;
+      await importCVEDetails(url, destDBConfig, yearsRange[year])
+        .then(() => {
+          logger.info(
+            `[CVE] Done importing CVE JSON Feeds - ${yearsRange[year]}`
+          );
         })
-        .catch(err => logger.error(err))
-        // await delay(500);
-      }
-      logger.info(
-        `[CVE] Done importing CVE JSON feeds from NVD for the years ${
-          yearsRange[0]
-        } - ${yearsRange[yearsRange.length - 1]}`
-      );
+        .catch((err) => logger.error(err));
+      // await delay(500);
     }
+    logger.info(
+      `[CVE] Done importing CVE JSON feeds from NVD for the years ${
+        yearsRange[0]
+      } - ${yearsRange[yearsRange.length - 1]}`
+    );
+  }
 }
 
 async function importCPE(connection) {
@@ -68,11 +71,11 @@ async function importCPE(connection) {
   var cpeUrl = nvd.CPE_DATA_FEED + nvd.FEED_TYPE;
   await importCPEmatches(cpeUrl, destDBConfig).then(() => {
     logger.info("[CPE] Done importing CPEs matches JSON feeds");
-  })
+  });
 }
 
-async function firstRecord() {
-  const CVEMeta = require("../models/cvemeta.js");
+async function firstCVEImport() {
+  const SyncMeta = require("../models/sync-meta.js");
 
   const handleError = function (err) {
     logger.error(err);
@@ -80,18 +83,43 @@ async function firstRecord() {
   };
 
   var id;
-  var firstRec = new CVEMeta({ lastModifiedDate: new Date() });
+  var firstRec = new SyncMeta();
   firstRec.save(function (err, record) {
     if (err) return handleError(err);
     id = record._id;
   });
 
   await delay(2000);
-  CVEMeta.findById(id, (err, record) => {
+  SyncMeta.findById(id, (err, record) => {
     if (err) {
       logger.error(err);
     } else {
-      logger.info(`[CVE META] First Record: ${record}`);
+      logger.info(`[SYNC META] First CVE Import: ${record}`);
+    }
+  });
+}
+
+async function firstCPEImport() {
+  const SyncMeta = require("../models/sync-meta.js");
+
+  const handleError = function (err) {
+    logger.error(err);
+    // handle your error
+  };
+
+  var id;
+  var firstRec = new SyncMeta({ type: "CPE" });
+  firstRec.save(function (err, record) {
+    if (err) return handleError(err);
+    id = record._id;
+  });
+
+  await delay(2000);
+  SyncMeta.findById(id, (err, record) => {
+    if (err) {
+      logger.error(err);
+    } else {
+      logger.info(`[SYNC META] First CPE Import: ${record}`);
     }
   });
 }
@@ -99,5 +127,6 @@ async function firstRecord() {
 module.exports = {
   importCVE,
   importCPE,
-  firstRecord,
+  firstCVEImport,
+  firstCPEImport,
 };

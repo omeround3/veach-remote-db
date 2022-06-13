@@ -7,6 +7,7 @@ const dbConfig = require("./config/database-config.js");
 const initializeDB = require("./app/scripts/initialize-db.js");
 const logger = require("./app/services/logger.js");
 const syncCveScheduler = require("./app/services/sync-cve-scheduler.js");
+const syncCpeScheduler = require("./app/services/sync-cpe-scheduler.js");
 
 function logRequest(req, res, next) {
   logger.info(req.url);
@@ -41,7 +42,9 @@ database.on("error", (error) => {
 database.once("connected", async () => {
   logger.info("[DATABASE] Successfully connected to the database");
   // await initializeDB.importCVE(database);
-  // await initializeDB.firstRecord();
-  // await initializeDB.importCPE(database);
-  // syncCveScheduler.syncCVE();
+  // await initializeDB.firstCVEImport();
+  await initializeDB.importCPE(database);
+  await initializeDB.firstCPEImport();
+  syncCveScheduler.syncCVE();
+  syncCpeScheduler.syncCPE(database);
 });

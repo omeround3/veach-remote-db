@@ -1,56 +1,83 @@
 const nvd = require("../constants/nvdapi.js");
-const CPEMeta = require("../models/cpemeta.js");
+const SyncMeta = require("../models/sync-meta.js");
 // const dbConfig = require("../../config/database-config.js");
 const https = require("https");
 const logger = require("./logger.js");
-const updateCVEDetails = require("./cpe-import.js").updateCPEDetails;
+const initializeDB = require("../scripts/initialize-db.js");
 const schedule = require("node-schedule");
 
-function syncCVE() {
+function syncCPE(connection) {
   // Set the scheduler to synchronize with nist db 0 */2 * * *
   // schedule.scheduleJob('*/15 * * * *', async () => {
-  schedule.scheduleJob("*/10 * * * * *", async () => {
+  schedule.scheduleJob("*/10 * * * *", async () => {
     logger.info(
-      `[CVE SYNC JOB] Running scheduled CVE Sync Job | Current Date() => ${new Date()}`
+      `[CPE SYNC JOB] Running scheduled CPE Sync Job | Current Date() => ${new Date()}`
     );
     try {
-      let metaDate = ""
-      let record = await CVEMeta.findOne();
-      logger.debug(`[CVE SYNC JOB] Current CVE Meta Date  => ${record.lastModifiedDate}`);
-      await getCVEfeedModifiedDate()
+      let metaDate = "";
+      let record = await SyncMeta.findOne({ type: "CPE" });
+      logger.debug(
+        `[CPE SYNC JOB] Current CPE Meta Date  => ${record.lastModifiedDate}`
+      );
+      await getCPEfeedModifiedDate()
         .then((res) => {
           metaDate = parseDatefromMetaFeed(res.body);
-          logger.debug(`[CVE SYNC JOB] CVE Modified Meta Feed Date: ${metaDate}`);
+          logger.debug(
+            `[CPE SYNC JOB] CPE Modified Meta Feed Date: ${metaDate}`
+          );
         })
         .catch((err) => {
-          logger.error(`[CVE SYNC JOB] Failed getting CVE Modified Meta feed with error: ${err}`);
+          logger.error(
+            `[CPE SYNC JOB] Failed getting CPE Modified Meta feed with error: ${err}`
+          );
         });
-      if (isCVEmodifiedFeedChanged(record.lastModifiedDate, metaDate)) {
+      if (isCPEmodifiedFeedChanged(record.lastModifiedDate, metaDate)) {
         logger.info(
-          "[CVE SYNC JOB] Modified feed date is newer, updating the database"
+          "[CPE SYNC JOB] Modified feed date is newer, updating the database"
         );
-        var modifiedUrl = nvd.CVE_MODIFIED_URL + nvd.FEED_TYPE;
-        await updateCVEDetails(modifiedUrl);
-        record.lastModifiedDate = metaDate;
+        await dropCPEMatches(connection);
+        await initializeDB.importCPE(connection);
+        record.lastModifiedDate = new Date();
         record.save().then(() => {
-          logger.debug(`[CVE SYNC JOB] Saved updated CVE Meta`);
+          logger.debug(`[CPE SYNC JOB] Updated CPE Sync Meta`);
         });
       } else {
         logger.info(
-          "[CVE SYNC JOB] No changes detected in remote modified feed"
+          "[CPE SYNC JOB] No changes detected in remote modified feed"
         );
       }
+      logger.info("[CPE SYNC JOB] Finished scheduled CPE Sync Job");
     } catch (error) {
-      logger.error(`[CVE SYNC JOB] Job Failed with error: ${error}`);
+      logger.error(`[CPE SYNC JOB] Job Failed with error: ${error}`);
     }
-    logger.info("[CVE SYNC JOB] Finished scheduled CVE Sync Job");
   });
 }
 
-async function getCVEfeedModifiedDate() {
+async function dropCPEMatches(connection) {
   return new Promise((resolve, reject) => {
-    let modifiedMetaUrl = nvd.CVE_MODIFIED_URL + nvd.META_TYPE;
-    const req = https.get(modifiedMetaUrl, (res) => {
+    try {
+      logger.info("[CPE SYNC JOB] Dropping CPEs matches collection");
+      connection.db.dropCollection("cpematches", function (err, result) {
+        if (err) {
+          logger.error("[CPE SYNC JOB] Failed to drop CPEs matches collection");
+        } else {
+          logger.info("[CPE SYNC JOB] Dropped CPEs Matches collection successfully");
+          resolve()
+        }
+      });
+    } catch (error) {
+      logger.error(`[CPE SYNC JOB] Failed to sync CPE matches feed with error: ${error}`);
+      reject(
+        new Error(`Failed to drop CPE matches collection`)
+      );
+    }
+  });
+}
+
+async function getCPEfeedModifiedDate() {
+  return new Promise((resolve, reject) => {
+    let CPEMetaUrl = nvd.CPE_DATA_FEED + nvd.META_TYPE;
+    const req = https.get(CPEMetaUrl, (res) => {
       const chunks = [];
 
       res.on("data", (chunk) => chunks.push(chunk));
@@ -72,7 +99,7 @@ async function getCVEfeedModifiedDate() {
   });
 }
 
-function isCVEmodifiedFeedChanged(currentDate, metaDate) {
+function isCPEmodifiedFeedChanged(currentDate, metaDate) {
   return currentDate.getTime() < metaDate.getTime();
 }
 
@@ -82,5 +109,5 @@ function parseDatefromMetaFeed(rawData) {
 }
 
 module.exports = {
-  syncCVE,
+  syncCPE,
 };

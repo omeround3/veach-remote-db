@@ -43,6 +43,7 @@ async function importCPEmatches(url, destDBConfig) {
   });
 }
 
+
 module.exports = {
-  importCPEmatches,
+  importCPEmatches
 };
