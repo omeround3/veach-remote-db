@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const app = express();
 const dbConfig = require("./config/database-config.js");
 const initializeDB = require("./app/scripts/initialize-db.js");
+const validateCollections = require("./app/scripts/collections-validation.js");
 const logger = require("./app/services/logger.js");
 const syncCveScheduler = require("./app/services/sync-cve-scheduler.js");
 const syncCpeScheduler = require("./app/services/sync-cpe-scheduler.js");
@@ -40,10 +41,23 @@ database.on("error", (error) => {
 
 database.once("connected", async () => {
   logger.info("[DATABASE] Successfully connected to the database");
-  // await initializeDB.importCVE(database);
-  // await initializeDB.firstCVEImport();
-  // await initializeDB.importCPE(database, false);
-  // await initializeDB.firstCPEImport();
-  // syncCveScheduler.syncCVE();
+  let isCollectionsExist = validateCollections(database)
+  if ((await isCollectionsExist).isExistCVE) {
+    logger.info("[VALIDATION] CVE details collection exists | Skipping import process");
+  }
+  else {
+    logger.info("[VALIDATION] CVE details collection doesn't exist | Starting import process");
+    await initializeDB.importCVE(database);
+    await initializeDB.firstCVEImport();
+  }
+  if ((await isCollectionsExist).isExistCPE) {
+    logger.info("[VALIDATION] CPE matches collection exists | Skipping import process");
+  }
+  else {
+    logger.info("[VALIDATION] CPE matches collection doesn't exist | Starting import process");
+    await initializeDB.importCPE(database, false);
+    await initializeDB.firstCPEImport();
+  }
+  syncCveScheduler.syncCVE();
   syncCpeScheduler.syncCPE(database);
 });
