@@ -54,7 +54,6 @@ async function importCVE(connection) {
           );
         })
         .catch((err) => logger.error(err));
-      // await delay(500);
     }
     logger.info(
       `[CVE] Done importing CVE JSON feeds from NVD for the years ${
@@ -64,10 +63,15 @@ async function importCVE(connection) {
   }
 }
 
-async function importCPE(connection) {
+async function importCPE(connection, isUpdate) {
   logger.info("[CPE] Importing CPEs matches feed");
   destDBConfig.dbConnection = connection;
-  destDBConfig.collection = "cpematches";
+  if (isUpdate) {
+    destDBConfig.collection = "cpematchesupdated";
+  }
+  else {
+    destDBConfig.collection = "cpematches";
+  }
   var cpeUrl = nvd.CPE_DATA_FEED + nvd.FEED_TYPE;
   await importCPEmatches(cpeUrl, destDBConfig).then(() => {
     logger.info("[CPE] Done importing CPEs matches JSON feeds");

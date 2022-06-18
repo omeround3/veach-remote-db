@@ -25,7 +25,6 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
-  //http://localhost:3000/cvedetails/CVE-2017-0001
   logger.info(`[SERVER] Server is running and listening on port ${PORT}.`)
 );
 
@@ -43,8 +42,8 @@ database.once("connected", async () => {
   logger.info("[DATABASE] Successfully connected to the database");
   // await initializeDB.importCVE(database);
   // await initializeDB.firstCVEImport();
-  await initializeDB.importCPE(database);
-  await initializeDB.firstCPEImport();
-  syncCveScheduler.syncCVE();
+  // await initializeDB.importCPE(database, false);
+  // await initializeDB.firstCPEImport();
+  // syncCveScheduler.syncCVE();
   syncCpeScheduler.syncCPE(database);
 });

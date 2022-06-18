@@ -16,26 +16,26 @@ async function importCPEmatches(url, destDBConfig) {
       response
         .pipe(zlib.createGunzip())
         .pipe(JSONStream.parse("matches.*"))
-        .pipe(
-          es.map(function (doc, callback) {
-            var versionInfo = "";
-            if ("versionStartExcluding" in doc) {
-              versionInfo += doc.versionStartExcluding + "_VSE";
-            }
-            if ("versionStartIncluding" in doc) {
-              versionInfo += doc.versionStartIncluding + "_VSI";
-            }
+        // .pipe(
+        //   es.map(function (doc, callback) {
+        //     var versionInfo = "";
+        //     if ("versionStartExcluding" in doc) {
+        //       versionInfo += doc.versionStartExcluding + "_VSE";
+        //     }
+        //     if ("versionStartIncluding" in doc) {
+        //       versionInfo += doc.versionStartIncluding + "_VSI";
+        //     }
 
-            if ("versionEndExcluding" in doc) {
-              versionInfo += doc.versionEndExcluding + "_VEE";
-            }
-            if ("versionEndIncluding" in doc) {
-              versionInfo += doc.versionEndIncluding + "_VEI";
-            }
-            doc._id = doc.cpe23Uri + versionInfo;
-            callback(null, doc);
-          })
-        )
+        //     if ("versionEndExcluding" in doc) {
+        //       versionInfo += doc.versionEndExcluding + "_VEE";
+        //     }
+        //     if ("versionEndIncluding" in doc) {
+        //       versionInfo += doc.versionEndIncluding + "_VEI";
+        //     }
+        //     doc._id = doc.cpe23Uri + versionInfo;
+        //     callback(null, doc);
+        //   })
+        // )
         .pipe(streamToMongoDB(destDBConfig))
         .on("finish", resolve)
         .on("error", reject);

@@ -7,9 +7,8 @@ const initializeDB = require("../scripts/initialize-db.js");
 const schedule = require("node-schedule");
 
 function syncCPE(connection) {
-  // Set the scheduler to synchronize with nist db 0 */2 * * *
-  // schedule.scheduleJob('*/15 * * * *', async () => {
-  schedule.scheduleJob("*/10 * * * *", async () => {
+  // Set the scheduler to synchronize with NIST NVD feeds 0 */2 * * *
+  schedule.scheduleJob("0 3 * * *", async () => {
     logger.info(
       `[CPE SYNC JOB] Running scheduled CPE Sync Job | Current Date() => ${new Date()}`
     );
@@ -22,9 +21,7 @@ function syncCPE(connection) {
       await getCPEfeedModifiedDate()
         .then((res) => {
           metaDate = parseDatefromMetaFeed(res.body);
-          logger.debug(
-            `[CPE SYNC JOB] CPE Modified Meta Feed Date: ${metaDate}`
-          );
+          logger.debug(`[CPE SYNC JOB] CPE Modified Meta Feed Date: ${metaDate}`);
         })
         .catch((err) => {
           logger.error(
@@ -35,8 +32,9 @@ function syncCPE(connection) {
         logger.info(
           "[CPE SYNC JOB] Modified feed date is newer, updating the database"
         );
+        await initializeDB.importCPE(connection, true);
         await dropCPEMatches(connection);
-        await initializeDB.importCPE(connection);
+        await renameUpdatedCPEMatches(connection);
         record.lastModifiedDate = new Date();
         record.save().then(() => {
           logger.debug(`[CPE SYNC JOB] Updated CPE Sync Meta`);
@@ -61,15 +59,33 @@ async function dropCPEMatches(connection) {
         if (err) {
           logger.error("[CPE SYNC JOB] Failed to drop CPEs matches collection");
         } else {
-          logger.info("[CPE SYNC JOB] Dropped CPEs Matches collection successfully");
-          resolve()
+          logger.info(
+            "[CPE SYNC JOB] Dropped CPEs Matches collection successfully"
+          );
+          resolve();
         }
       });
     } catch (error) {
-      logger.error(`[CPE SYNC JOB] Failed to sync CPE matches feed with error: ${error}`);
-      reject(
-        new Error(`Failed to drop CPE matches collection`)
+      logger.error(
+        `[CPE SYNC JOB] Failed to sync CPE matches feed with error: ${error}`
       );
+      reject(new Error(`Failed to drop CPE matches collection`));
+    }
+  });
+}
+
+async function renameUpdatedCPEMatches(connection) {
+  return new Promise((resolve, reject) => {
+    try {
+      logger.info("[CPE SYNC JOB] Renaming updated CPEs matches collection");
+      connection.db.collection("cpematchesupdated").rename("cpematches");
+      logger.info("[CPE SYNC JOB] Renamed updated CPEs matches collection successfully");
+      resolve();
+    } catch (error) {
+      logger.error(
+        `[CPE SYNC JOB] Failed to rename updated CPE matches collection with error: ${error}`
+      );
+      reject(new Error(`Failed to rename updated CPEs matches collection`));
     }
   });
 }
