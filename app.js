@@ -23,6 +23,7 @@ function logError(err, req, res, next) {
 app.use(logRequest);
 app.use(logError);
 app.use(express.json());
+require('./app/routes/cvedetails.routes.js')(app);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
