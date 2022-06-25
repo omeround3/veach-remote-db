@@ -361,6 +361,6 @@ Project Link: [https://github.com/omeround3/veach-remote-db](https://github.com/
 [issues-shield]: https://img.shields.io/github/issues/omeround3/veach-remote-db.svg?style=for-the-badge
 [issues-url]: https://github.com/omeround3/veach-remote-db/issues
 [license-shield]: https://img.shields.io/github/license/omeround3/veach-remote-db.svg?style=for-the-badge
-[license-url]: https://github.com/omeround3/veach-remote-db/blob/master/LICENSE.md
+[license-url]: https://github.com/omeround3/veach-remote-db/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/omer-lev-ron-a075351b0
