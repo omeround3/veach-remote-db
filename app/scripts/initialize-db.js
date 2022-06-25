@@ -1,11 +1,23 @@
-const nvd = require("../constants/nvdapi.js");
 const dbConfig = require("../../config/database-config.js");
 const importCVEDetails = require("../services/cve-import.js").importCVEDetails;
-const logger = require("../services/logger.js")
+const importCPEmatches = require("../services/cpe-import.js").importCPEmatches;
+const nvd = require("../constants/nvdapi.js");
+const logger = require("../services/logger.js");
+
+var destDBConfig = {
+  dbURL: dbConfig.url,
+  dbConnection: "",
+  collection: dbConfig.collection,
+  batchSize: dbConfig.batchSize,
+};
+
+// Delay helper function
+function delay(time) {
+  return new Promise((resolve) => setTimeout(resolve, time));
+}
 
 // Import data from NIST for years provided in cmd line args
-
-function importDB(connection) {
+async function importCVE(connection) {
   var years = process.argv.slice(2);
   var FIRST_YEAR = 2002;
   let currentYear = new Date().getFullYear();
@@ -13,42 +25,61 @@ function importDB(connection) {
     (x) => x + FIRST_YEAR
   );
 
-  const destDBConfig = {
-    dbURL: dbConfig.url,
-    dbConnection: connection,
-    collection: dbConfig.collection,
-    batchSize: dbConfig.batchSize,
-  };
+  destDBConfig.dbConnection = connection;
 
   // Import files from NVD by years provided as cmd arguments or all years until today
   if (years.length > 0) {
-    logger.info("Importing JSON feeds from NVD for the years: " + years);
+    logger.info(
+      "[CVE] Importing CVE JSON feeds from NVD for the years: " + years
+    );
     for (var i = 0; i < years.length; i++) {
-      var url = nvd.DATA_FEED + years[i] + nvd.FEED_TYPE;
-      logger.info("Importing " + years[i]);
+      var url = nvd.CVE_DATA_FEED + years[i] + nvd.FEED_TYPE;
+      logger.info("[CVE] Importing " + years[i]);
       importCVEDetails(url, destDBConfig);
     }
   } else {
     logger.info(
-      `Importing JSON feeds from NVD for the years ${yearsRange[0]} - ${
-        yearsRange[yearsRange.length - 1]
-      }`
+      `[CVE] Importing CVE JSON feeds from NVD for the years ${
+        yearsRange[0]
+      } - ${yearsRange[yearsRange.length - 1]}`
     );
 
     for (const year in yearsRange) {
-      logger.info(`Importing year ${yearsRange[year]}`);
-      var url = nvd.DATA_FEED + yearsRange[year] + nvd.FEED_TYPE;
-      importCVEDetails(url, destDBConfig, yearsRange[year]);
+      logger.info(`[CVE] Importing year ${yearsRange[year]}`);
+      url = nvd.CVE_DATA_FEED + yearsRange[year] + nvd.FEED_TYPE;
+      await importCVEDetails(url, destDBConfig, yearsRange[year])
+        .then(() => {
+          logger.info(
+            `[CVE] Done importing CVE JSON Feeds - ${yearsRange[year]}`
+          );
+        })
+        .catch((err) => logger.error(err));
     }
+    logger.info(
+      `[CVE] Done importing CVE JSON feeds from NVD for the years ${
+        yearsRange[0]
+      } - ${yearsRange[yearsRange.length - 1]}`
+    );
   }
 }
 
-function delay(time) {
-  return new Promise(resolve => setTimeout(resolve, time));
-} 
+async function importCPE(connection, isUpdate) {
+  logger.info("[CPE] Importing CPEs matches feed");
+  destDBConfig.dbConnection = connection;
+  if (isUpdate) {
+    destDBConfig.collection = "cpematchesupdated";
+  }
+  else {
+    destDBConfig.collection = "cpematches";
+  }
+  var cpeUrl = nvd.CPE_DATA_FEED + nvd.FEED_TYPE;
+  await importCPEmatches(cpeUrl, destDBConfig).then(() => {
+    logger.info("[CPE] Done importing CPEs matches JSON feeds");
+  });
+}
 
-async function firstRecord() {
-  const CVEMeta = require("../models/cvemeta.js");
+async function firstCVEImport() {
+  const SyncMeta = require("../models/sync-meta.js");
 
   const handleError = function (err) {
     logger.error(err);
@@ -56,23 +87,50 @@ async function firstRecord() {
   };
 
   var id;
-  var firstRec = new CVEMeta({ lastModifiedDate: new Date() });
+  var firstRec = new SyncMeta();
   firstRec.save(function (err, record) {
     if (err) return handleError(err);
     id = record._id;
   });
 
-  await delay(2000)
-  CVEMeta.findById(id, (err, record) => {
+  await delay(2000);
+  SyncMeta.findById(id, (err, record) => {
     if (err) {
       logger.error(err);
     } else {
-      logger.info("First Record:", record);
+      logger.info(`[SYNC META] First CVE Import: ${record}`);
+    }
+  });
+}
+
+async function firstCPEImport() {
+  const SyncMeta = require("../models/sync-meta.js");
+
+  const handleError = function (err) {
+    logger.error(err);
+    // handle your error
+  };
+
+  var id;
+  var firstRec = new SyncMeta({ type: "CPE" });
+  firstRec.save(function (err, record) {
+    if (err) return handleError(err);
+    id = record._id;
+  });
+
+  await delay(2000);
+  SyncMeta.findById(id, (err, record) => {
+    if (err) {
+      logger.error(err);
+    } else {
+      logger.info(`[SYNC META] First CPE Import: ${record}`);
     }
   });
 }
 
 module.exports = {
-  importDB,
-  firstRecord,
+  importCVE,
+  importCPE,
+  firstCVEImport,
+  firstCPEImport,
 };

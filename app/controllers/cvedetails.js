@@ -1,4 +1,4 @@
-const CVEDetails = require('../models/cvedetails.model.js');
+const CVEDetails = require('../models/cvedetails.js');
 
 exports.findOne = (req, res) => {
 

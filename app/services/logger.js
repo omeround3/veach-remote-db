@@ -1,9 +1,9 @@
 const { createLogger, format, transports, config } = require("winston");
-const { combine, splat, timestamp, printf } = format;
+const { combine, timestamp, printf } = format;
 
 const options = {
   console: {
-    level: "info",
+    level: process.env.LOG_LEVEL || "info",
     handleExceptions: true,
     // json: true,
     colorize: true,
