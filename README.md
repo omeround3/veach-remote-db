@@ -95,6 +95,11 @@ The project integrates with NIST NVD Data feeds to initially import JSON feeds a
 
 This project also provides queryable REST-API using NodeJS.
 
+**Architecture Diagram**
+<br />
+<img src="https://user-images.githubusercontent.com/45568925/175769934-64cf82bc-5428-4367-be9b-94bc4d063aca.png" alt="Logo" width="500" height="500">
+
+
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 
