@@ -85,7 +85,7 @@
 ## About The Project
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
-The VEACH Remote DB project is part of the ![VEACH](https://github.com/omeround3/veach) project.
+The VEACH Remote DB project is part of the [VEACH](https://github.com/omeround3/veach) project.
 
 It's a Node.js project that implements a remote managed CVE & CPE databases. The remote database is maintained & updated automatically. Using this remote database, the VEACH system local MongoDB database will be updated periodically from the remote  CVE & CPE database.
 
