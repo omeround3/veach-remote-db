@@ -237,8 +237,8 @@ GET http://localhost:3000/cvedetails/CVE-2017-0001
 To deploy to AWS Elastic Beanstalk, we are recommending to follow AWS official documentation.
 They are covering all the steps needed to deploy the Node.js application to Elastic Beanstalk.
 
-[Link to Docs](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_nodejs.html)
-[Another good guide](https://medium.com/@xoor/deploying-a-node-js-app-to-aws-elastic-beanstalk-681fa88bac53)
+- [Link to Docs](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_nodejs.html)
+- [Another good guide](https://medium.com/@xoor/deploying-a-node-js-app-to-aws-elastic-beanstalk-681fa88bac53)
 
 Make sure to create a user with specific permissions to Elastic Beansstalk and not to use the root AWS user for the deployment (basic security measures).
 
